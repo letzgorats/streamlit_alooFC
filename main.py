@@ -1,42 +1,38 @@
+import psycopg2
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
+from dotenv import load_dotenv
+import os
 
-st.title("Aloo FC")
+# .env 파일 로드
+load_dotenv()
 
-# 출석률 데이터
-data = {
-    'name':['김정엽','김상민','변장석','전영성'],
-    'August' : [1, 1, 1, 1],
-    'September': [0, 0, 0, 0],
-    'October': [0, 0, 0, 0],
-    'November': [0, 0, 0, 0],
-    'December': [0, 0, 0, 0],
-    'January': [0, 0, 0, 0],
-    'February': [0, 0, 0, 0],
-    'March': [0, 0, 0, 0],
-    'April': [0, 0, 0, 0],
-    'May': [0, 0, 0, 0],
-    'June': [0, 0, 0, 0],
-    'July': [0, 0, 0, 0],
-}
+# PostgreSQL 연결 설정
+def create_connection():
+    conn = psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD")
+    )
+    return conn
 
-df = pd.DataFrame(data)
+# 팀 멤버 데이터 가져오기
+def get_team_members():
+    conn = create_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT name, city, height, shoe_size, body_type, weight, support_team, commitment FROM team_members")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
 
-# 출석률 계산
-df['Attendance Rate'] = df.iloc[:, 1:].mean(axis=1) * 100
+# Streamlit 앱 실행
+st.title("Aloo FC 팀 멤버 리스트")
 
-# 출석률에 의해 정렬
-df = df.sort_values('Attendance Rate',ascending=False)
-
-# Stremlit UI
-st.title('Aloo FC 월별 출석률')
-st.table(df)
-
-# 출석률 시각화
-plt.figure(figsize=(10,5))
-plt.bar(df['name'],df['Attendance Rate'])
-plt.xlabel('Player')
-plt.ylabel('Attendance Rate(%)')
-plt.title('출석률')
-st.pyplot(plt)
+# 팀 멤버 데이터를 가져와 출력
+team_members = get_team_members()
+for member in team_members:
+    st.write(f"**이름:** {member[0]}, **사는 곳:** {member[1]}, **키:** {member[2]} cm, **신발 사이즈:** {member[3]} mm")
+    st.write(f"**체형:** {member[4]}, **몸무게:** {member[5]} kg, **응원하는 팀:** {member[6]}")
+    st.write(f"**각오 한 마디:** {member[7]}")
+    st.write("---")
