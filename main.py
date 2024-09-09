@@ -22,7 +22,7 @@ def create_connection():
     DATABASE_URL = os.getenv('DATABASE_URL')
 
     if DATABASE_URL:  # Fly.io 환경일 때는 DATABASE_URL 사용
-        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        conn = psycopg2.connect(DATABASE_URL, sslmode='disable')
     else:  # 로컬 환경일 때는 .env 파일의 변수 사용
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
@@ -31,6 +31,7 @@ def create_connection():
             password=os.getenv("DB_PASSWORD")
         )
     return conn
+
 
 # 팀 멤버 데이터 가져오기
 def get_team_members():
