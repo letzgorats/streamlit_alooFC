@@ -14,7 +14,7 @@ def load_image(image_path):
 
 
 # 로컬 환경에서만 .env 파일을 로드하도록 설정
-if os.getenv('aloo-fc') is None:  # Fly.io 환경이 아닌 경우
+if os.getenv('aloofc') is None:  # Fly.io 환경이 아닌 경우
     load_dotenv()
 
 def create_connection():
