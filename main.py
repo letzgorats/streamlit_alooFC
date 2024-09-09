@@ -12,17 +12,24 @@ def load_image(image_path):
     img = Image.open(image_path)
     return img
 
-# .env 파일 로드
-load_dotenv()
 
-# PostgreSQL 연결 설정
+# 로컬 환경에서만 .env 파일을 로드하도록 설정
+if os.getenv('aloo-fc') is None:  # Fly.io 환경이 아닌 경우
+    load_dotenv()
+
 def create_connection():
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD")
-    )
+    # Fly.io 환경에서 DATABASE_URL 환경 변수를 사용
+    DATABASE_URL = os.getenv('DATABASE_URL')
+
+    if DATABASE_URL:  # Fly.io 환경일 때는 DATABASE_URL 사용
+        conn = psycopg2.connect(DATABASE_URL)
+    else:  # 로컬 환경일 때는 .env 파일의 변수 사용
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            database=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD")
+        )
     return conn
 
 # 팀 멤버 데이터 가져오기

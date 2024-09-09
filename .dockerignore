@@ -1,0 +1,29 @@
+# flyctl launch added from .gitignore
+# 가상 환경
+**/venv
+
+# 파이썬 캐시
+**/__pycache__
+
+# 환경 변수 파일
+**/.env
+
+# 기타 빌드 또는 임시 파일
+**/*.log
+**/*.pyc
+**/*.pyo
+
+# flyctl launch added from .idea/.gitignore
+# Default ignored files
+.idea/shelf
+.idea/workspace.xml
+# Editor-based HTTP Client requests
+.idea/httpRequests
+# Datasource local storage ignored files
+.idea/dataSources
+.idea/dataSources.local.xml
+
+# flyctl launch added from venv/.gitignore
+# created by virtualenv automatically
+venv/**/*
+fly.toml
