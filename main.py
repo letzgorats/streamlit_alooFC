@@ -37,7 +37,7 @@ def create_connection():
 def get_team_members():
     conn = create_connection()
     cur = conn.cursor()
-    cur.execute("SELECT jersey_number, name, height, shoe_size, body_type, weight, support_team, commitment FROM team_members")
+    cur.execute("SELECT name, jersey_number, height, shoe_size, body_type, weight, support_team, commitment FROM team_members")
     rows = cur.fetchall()
     cur.close()
     conn.close()
