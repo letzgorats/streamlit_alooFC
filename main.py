@@ -33,6 +33,7 @@ def create_connection():
     return conn
 
 
+
 # 팀 멤버 데이터 가져오기
 def get_team_members():
     conn = create_connection()
