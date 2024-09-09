@@ -57,7 +57,7 @@ def get_member_names():
 st.title("⚽️ Aloo FC ⚽️")
 
 # 사이드바에 기능 구현
-st.sidebar.title("📋 AlooFC 메뉴")
+st.sidebar.title("📋 AlooFC 메뉴 ")
 menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 리스트", "회비 정보"])
 
 # 1. 팀 소개 탭
