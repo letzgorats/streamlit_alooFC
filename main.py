@@ -125,7 +125,30 @@ elif menu == "팀 멤버 리스트":
         cur.close()
         conn.close()
 
-    if member_info:
+    if not member_info:
+        # '모든 선수 보기' 선택 시 모든 선수의 프로필 사진 출력
+        team_members = get_team_members()
+
+        # 3명씩 한 줄에 나열
+        cols = st.columns(3)
+
+        for i, member in enumerate(team_members):
+            with cols[i % 3]:
+                # 각 선수 카드 스타일
+                image_path = f"images/24_25_players_profile/{member[1].lower()}_{member[0].lower()}_profile.jpg"
+                img = load_image(image_path)
+                st.image(img, width=150, use_column_width=False)  # 직사각형에 가까운 타원형 이미지 적용
+
+                st.markdown(f"""
+                            <div style="background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 20px; text-align: center;">
+                                <h4>{member[0]} {member[1]}</h4>
+                                <p><strong>직책:</strong> {member[2]}</p>
+                                <p><strong>포지션:</strong> {member[3]}</p>
+                                <p><strong>등번호:</strong> {member[4]}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+    else:
+
         st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
         image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
         st.image(load_image(image_path), width=200)
@@ -143,29 +166,6 @@ elif menu == "팀 멤버 리스트":
         st.markdown(f"**체형:** {member_info[11]}")
         st.markdown(f"**응원하는 팀:** {member_info[12]}")
         st.markdown(f"**각오 한 마디:** {member_info[13]}")
-
-    else:
-        # '모든 선수 보기' 선택 시 모든 선수의 프로필 사진 출력
-        team_members = get_team_members()
-
-        # 3명씩 한 줄에 나열
-        cols = st.columns(3)
-
-        for i, member in enumerate(team_members):
-            with cols[i % 3]:
-                # 각 선수 카드 스타일
-                image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
-                img = load_image(image_path)
-                st.image(img, width=150, use_column_width=False)  # 직사각형에 가까운 타원형 이미지 적용
-
-                st.markdown(f"""
-                    <div style="background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 20px; text-align: center;">
-                        <h4>{member[0]} {member[1]}</h4>
-                        <p><strong>직책:</strong> {member[2]}</p>
-                        <p><strong>포지션:</strong> {member[3]}</p>
-                        <p><strong>등번호:</strong> {member[4]}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
 
 # 3. 회비 정보 탭
 elif menu == "회비 정보":
