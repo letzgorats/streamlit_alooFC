@@ -22,13 +22,14 @@ def create_connection():
     DATABASE_URL = os.getenv('DATABASE_URL')
 
     if DATABASE_URL:  # Fly.io 환경일 때는 DATABASE_URL 사용
-        conn = psycopg2.connect(DATABASE_URL, sslmode='disable')
+        conn = psycopg2.connect(DATABASE_URL, sslmode='require')  # 보안을 위해 'require' 사용
     else:  # 로컬 환경일 때는 .env 파일의 변수 사용
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
             database=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD")
+            password=os.getenv("DB_PASSWORD"),
+            port=os.getenv("DB_PORT", "5432")
         )
     return conn
 
@@ -109,6 +110,8 @@ elif menu == "팀 멤버 리스트":
     # 팀원 검색 기능 추가 (모든 선수 보기 포함)
     search_name = st.selectbox("선수를 선택하세요:", options=get_member_names())
 
+    member_info = None  # 초기화
+
     if search_name != '모든 선수 보기':
         # 특정 선수 검색 시 해당 선수의 프로필과 정보 출력
         conn = create_connection()
@@ -124,7 +127,7 @@ elif menu == "팀 멤버 리스트":
 
     if member_info:
         st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
-        image_path = f"images/24_25_players_profile/{member_info[0].lower()}_{member_info[1].lower()}_profile.jpg"
+        image_path = f"images/24_25_players_profile/{member_info[0].lower()}{member_info[1].lower()}_profile.jpg"
         st.image(load_image(image_path), width=200)
 
         # 팀 멤버 상세 정보 출력
