@@ -1,70 +1,22 @@
-# fly.toml app configuration file generated for aloo-fc-db on 2024-09-10T06:58:21+09:00
+# fly.toml app configuration file generated for aloofc on 2024-09-11T04:17:17+09:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'aloo-fc-db'
+app = 'aloofc'
 primary_region = 'nrt'
 
-[env]
-  PRIMARY_REGION = 'nrt'
-  POSTGRES_PASSWORD = "FegBYPu6RC6rZiQ"
+[build]
 
-[[mounts]]
-  source = "pg_data"
-  destination = "/var/lib/postgresql/data/pgdata"
+[http_service]
+  internal_port = 8501
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
-
-[[services]]
-  protocol = 'tcp'
-  internal_port = 5432
-  auto_start_machines = false
-
-  [[services.ports]]
-    port = 5432
-    handlers = ['pg_tls']
-
-  [services.concurrency]
-    type = 'connections'
-    hard_limit = 1000
-    soft_limit = 1000
-
-[[services]]
-  protocol = 'tcp'
-  internal_port = 5433
-  auto_start_machines = false
-
-  [[services.ports]]
-    port = 5433
-    handlers = ['pg_tls']
-
-  [services.concurrency]
-    type = 'connections'
-    hard_limit = 1000
-    soft_limit = 1000
-
-[checks]
-  [checks.pg]
-    port = 5500
-    type = 'http'
-    interval = '15s'
-    timeout = '10s'
-    path = '/flycheck/pg'
-
-  [checks.role]
-    port = 5500
-    type = 'http'
-    interval = '15s'
-    timeout = '10s'
-    path = '/flycheck/role'
-
-  [checks.vm]
-    port = 5500
-    type = 'http'
-    interval = '15s'
-    timeout = '10s'
-    path = '/flycheck/vm'
-
-[[metrics]]
-  port = 9187
-  path = '/metrics'
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

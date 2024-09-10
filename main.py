@@ -38,7 +38,11 @@ def create_connection():
 def get_team_members():
     conn = create_connection()
     cur = conn.cursor()
-    cur.execute("SELECT name, jersey_number, height, shoe_size, body_type, weight, support_team, commitment FROM team_members")
+    cur.execute("""
+        SELECT first_name, last_name, position, role, jersey_number, city, district, 
+               height, weight, main_foot, shoe_size, body_type, support_team, commitment 
+        FROM team_members
+    """)
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -48,11 +52,10 @@ def get_team_members():
 def get_member_names():
     conn = create_connection()
     cur = conn.cursor()
-    cur.execute("SELECT name FROM team_members")
+    cur.execute("SELECT first_name || ' ' || last_name FROM team_members")
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    # '모든 선수 보기' 옵션 추가
     return ['모든 선수 보기'] + [row[0] for row in rows]
 
 # Streamlit 앱 실행
@@ -66,12 +69,12 @@ menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 
 # 1. 팀 소개 탭
 if menu == "팀 소개":
     st.header("Aloo FC 팀 소개 📢")
-    st.image(load_image("images/alooFC_logo.png"), caption="Aloo FC 로고", width=200)
+    st.image(load_image("images/logo/alooFC_logo.png"), caption="Aloo FC 로고", width=200)
     st.write("Aloo FC는 풋살을 사랑하는 열정적인 팀입니다. 항상 최선을 다해 경기에 임합니다!")
 
     # 유니폼 이미지 (비율 고정 안함)
     st.markdown("## 👕 유니폼 소개")
-    st.image("images/team_uniform.jpg", caption="Aloo FC 유니폼", width=400, use_column_width='auto')
+    st.image("images/uniform/team_uniform.jpg", caption="Aloo FC 유니폼", width=400, use_column_width='auto')
 
     st.markdown("## 🌠 주 활동 지역")
     # 부천 클리어 풋살장의 좌표
@@ -110,47 +113,56 @@ elif menu == "팀 멤버 리스트":
         # 특정 선수 검색 시 해당 선수의 프로필과 정보 출력
         conn = create_connection()
         cur = conn.cursor()
-        cur.execute(
-            f"SELECT name, jersey_number, height, shoe_size, body_type, weight, support_team, commitment FROM team_members WHERE name = %s",
-            (search_name,))
+        cur.execute("""
+                SELECT first_name, last_name, position, role, jersey_number, city, district, 
+                       height, weight, main_foot, shoe_size, body_type, support_team, commitment 
+                FROM team_members WHERE first_name || ' ' || last_name = %s
+            """, (search_name,))
         member_info = cur.fetchone()
         cur.close()
         conn.close()
 
-        if member_info:
-            st.subheader(f"{search_name}의 프로필 📄")
-            image_path = f"images/{member_info[0].lower()}_profile.jpg"
-            st.image(load_image(image_path), width=200)
+    if member_info:
+        st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
+        image_path = f"images/24_25_players_profile/{member_info[0].lower()}_{member_info[1].lower()}_profile.jpg"
+        st.image(load_image(image_path), width=200)
 
-            # 팀 멤버 상세 정보 출력
-            st.markdown(f"**이름:** {member_info[0]}")
-            st.markdown(f"**등번호:** {member_info[1]}")
-            st.markdown(f"**키:** {member_info[2]} cm")
-            st.markdown(f"**신발 사이즈:** {member_info[3]} mm")
-            st.markdown(f"**체형:** {member_info[4]}")
-            st.markdown(f"**몸무게:** {member_info[5]} kg")
-            st.markdown(f"**응원하는 팀:** {member_info[6]}")
-            st.markdown(f"**각오 한 마디:** {member_info[7]}")
+        # 팀 멤버 상세 정보 출력
+        st.markdown(f"**이름:** {member_info[0]} {member_info[1]}")
+        st.markdown(f"**직책:** {member_info[2]}")
+        st.markdown(f"**포지션:** {member_info[3]}")
+        st.markdown(f"**등번호:** {member_info[4]}")
+        st.markdown(f"**지역:** {member_info[5]}, {member_info[6]}")
+        st.markdown(f"**키:** {member_info[7]} cm")
+        st.markdown(f"**몸무게:** {member_info[8]} kg")
+        st.markdown(f"**주발:** {member_info[9]}")
+        st.markdown(f"**신발 사이즈:** {member_info[10]} mm")
+        st.markdown(f"**체형:** {member_info[11]}")
+        st.markdown(f"**응원하는 팀:** {member_info[12]}")
+        st.markdown(f"**각오 한 마디:** {member_info[13]}")
+
     else:
         # '모든 선수 보기' 선택 시 모든 선수의 프로필 사진 출력
         team_members = get_team_members()
 
-        # 3개 또는 4개씩 한 줄에 나열
-        cols = st.columns(3)  # 3명씩 배치
+        # 3명씩 한 줄에 나열
+        cols = st.columns(3)
 
         for i, member in enumerate(team_members):
             with cols[i % 3]:
                 # 각 선수 카드 스타일
-                image_path = f"images/{member[0].lower()}_profile.jpg"
+                image_path = f"images/24_25_players_profile/{member[0].lower()}{member[1].lower()}_profile.jpg"
                 img = load_image(image_path)
                 st.image(img, width=150, use_column_width=False)  # 직사각형에 가까운 타원형 이미지 적용
 
                 st.markdown(f"""
-                <div style="background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 20px; text-align: center;">
-                    <h4>{member[0]}</h4>
-                    <p><strong>등번호:</strong> {member[1]}</p>
-                </div>
-                """, unsafe_allow_html=True)
+                    <div style="background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 20px; text-align: center;">
+                        <h4>{member[0]} {member[1]}</h4>
+                        <p><strong>직책:</strong> {member[2]}</p>
+                        <p><strong>포지션:</strong> {member[3]}</p>
+                        <p><strong>등번호:</strong> {member[4]}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 # 3. 회비 정보 탭
 elif menu == "회비 정보":

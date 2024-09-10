@@ -1,13 +1,23 @@
-# 가상 환경
+# Python 가상 환경
 venv/
-
-# 파이썬 캐시
 __pycache__/
-
-# 환경 변수 파일
-.env
-
-# 기타 빌드 또는 임시 파일
-*.log
 *.pyc
 *.pyo
+*.pyd
+.Python
+env/
+.venv/
+
+# 환경 변수 파일 (민감 정보)
+.env
+
+# Docker 관련 파일
+*.log
+Dockerfile
+docker-compose.yml
+
+# 기타 IDE 및 시스템 파일
+.idea/
+*.swp
+*.swo
+.DS_Store
