@@ -29,9 +29,71 @@ def create_connection():
             database=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
-            port=os.getenv("DB_PORT", "5432")
+            port=os.getenv("DB_PORT", "5433")
         )
     return conn
+
+# 다크모드/라이트모드 선택 기능 추가
+mode = st.sidebar.selectbox("모드를 선택하세요", ["라이트 모드", "다크 모드"])
+
+# CSS 스타일 설정
+# 사이드바 배경색 설정
+if mode == "다크 모드":
+    background_color = "#1e1e1e"
+    text_color = "#ffffff"
+    card_color = "#2c2c2c"
+    sidebar_bg = "#333333"  # 다크모드용 사이드바 배경색
+    header_color = "#4CAF50"
+else:
+    background_color = "#d6ccc2"  # 라이트 모드 전체 배경 색상
+    text_color = "#000000"
+    card_color = "#f5f5f5"
+    sidebar_bg = "#f5f5f5"  # 라이트모드용 사이드바 배경색
+    header_color = "#4CAF50"
+
+# 전체 배경과 페이지 스타일 적용
+st.markdown(f"""
+    <style>
+        /* 배경색과 텍스트 스타일 */
+        .stApp {{
+            background-color: {background_color};
+            color: {text_color};
+        }}
+        /* 사이드바 배경색 설정 */
+        section[data-testid="stSidebar"] {{
+            background-color: {sidebar_bg};
+        }}
+        /* 카드 스타일 */
+        .card {{
+            background-color: {card_color};
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }}
+        /* 이미지 모양을 원형에 가깝게 조정 및 클릭 기능 제거 */
+        img {{
+            pointer-events: none;  /* 클릭 기능 완전히 제거 */
+            border-radius: 50% / 40%;  /* 직사각형에 가까운 타원형 */
+            object-fit: cover;
+            width: 150px;
+            height: 200px;
+        }}
+        /* 프로필 제목 (큰 제목 포함, 색상 변경) */
+        h1, h2, h3, h4 {{
+            color: {header_color};
+            font-weight: bold;
+        }}
+        /* 카드 내부의 텍스트 */
+        p {{
+            margin: 5px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: {text_color};
+        }}
+    </style>
+""", unsafe_allow_html=True)
 
 
 
@@ -140,10 +202,10 @@ elif menu == "팀 멤버 리스트":
                 st.image(img, width=150, use_column_width=False)  # 직사각형에 가까운 타원형 이미지 적용
 
                 st.markdown(f"""
-                            <div style="background-color: #fff; padding: 15px; border-radius: 10px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 20px; text-align: center;">
-                                <h4>{member[0]} {member[1]}</h4>
-                                <p><strong>직책:</strong> {member[2]}</p>
-                                <p><strong>포지션:</strong> {member[3]}</p>
+                            <div class="card">
+                                <h4 style="color: #4CAF50;">{member[0]} {member[1]}</h4>
+                                <p style="font-weight: bold;"><strong>직책:</strong> {member[3]}</p>
+                                <p><strong>포지션:</strong> {member[2]}</p>
                                 <p><strong>등번호:</strong> {member[4]}</p>
                             </div>
                             """, unsafe_allow_html=True)
@@ -175,27 +237,3 @@ elif menu == "회비 정보":
     # 회비 링크 추가
     fee_link = "https://www.imchongmoo.com/share/MtE8J8n0p48O3xGNNIqXapjzLtbXTcfye9AfJCKo5jWAgjMGWwfOIplciNkIQbDSsmfZXJ372Lfhp3EmoitAWA"
     st.markdown(f"[팀 회비 납부 링크]({fee_link})", unsafe_allow_html=True)
-
-# 스타일 적용
-st.markdown("""
-    <style>
-        /* 팀 멤버 사진: 직사각형에 가까운 타원형 적용 */
-        img {
-            border-radius: 50% / 40%;  /* 직사각형에 가까운 타원형 */
-            object-fit: cover;
-            width: 150px;
-            height: 200px;
-        }
-        .container {
-            background-color: #e0f7fa;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 2px 2px 12px rgba(2, 53, 51, 0.1);
-            margin-bottom: 10px;
-        }
-        .header {
-            color: #00796b;
-            font-size: 24px;
-        }
-    </style>
-""", unsafe_allow_html=True)
