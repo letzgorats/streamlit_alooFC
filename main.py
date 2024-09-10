@@ -127,7 +127,7 @@ elif menu == "팀 멤버 리스트":
 
     if member_info:
         st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
-        image_path = f"images/24_25_players_profile/{member_info[0].lower()}{member_info[1].lower()}_profile.jpg"
+        image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
         st.image(load_image(image_path), width=200)
 
         # 팀 멤버 상세 정보 출력
