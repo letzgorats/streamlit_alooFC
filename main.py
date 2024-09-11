@@ -180,7 +180,7 @@ elif menu == "팀 멤버 리스트":
         cur = conn.cursor()
         cur.execute("""
                 SELECT first_name, last_name, position, role, jersey_number, city, district, 
-                       height, weight, main_foot, shoe_size, body_type, support_team, commitment 
+                       height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment 
                 FROM team_members WHERE first_name || ' ' || last_name = %s
             """, (search_name,))
         member_info = cur.fetchone()
@@ -217,8 +217,8 @@ elif menu == "팀 멤버 리스트":
 
         # 팀 멤버 상세 정보 출력
         st.markdown(f"**이름:** {member_info[0]} {member_info[1]}")
-        st.markdown(f"**직책:** {member_info[2]}")
-        st.markdown(f"**포지션:** {member_info[3]}")
+        st.markdown(f"**포지션:** {member_info[2]}")
+        st.markdown(f"**직책:** {member_info[3]}")
         st.markdown(f"**등번호:** {member_info[4]}")
         st.markdown(f"**지역:** {member_info[5]}, {member_info[6]}")
         st.markdown(f"**키:** {member_info[7]} cm")
@@ -227,7 +227,8 @@ elif menu == "팀 멤버 리스트":
         st.markdown(f"**신발 사이즈:** {member_info[10]} mm")
         st.markdown(f"**체형:** {member_info[11]}")
         st.markdown(f"**응원하는 팀:** {member_info[12]}")
-        st.markdown(f"**각오 한 마디:** {member_info[13]}")
+        st.markdown(f"**좋아하는 선수:** {member_info[13]}")
+        st.markdown(f"**각오 한 마디:** {member_info[14]}")
 
 # 3. 회비 정보 탭
 elif menu == "회비 정보":
@@ -235,5 +236,5 @@ elif menu == "회비 정보":
     st.write("아래 링크를 통해 팀 회비를 납부해주세요:")
 
     # 회비 링크 추가
-    fee_link = "https://www.imchongmoo.com/share/MtE8J8n0p48O3xGNNIqXapjzLtbXTcfye9AfJCKo5jWAgjMGWwfOIplciNkIQbDSsmfZXJ372Lfhp3EmoitAWA"
+    fee_link = "https://www.imchongmoo.com/share/MtE8J8n0p48O3xGNNIqXapjzLtbXTcfye9AfJCKo5jX-uqYuLbLYDyIhRDUrI9K7Kymvtu7mkw-U8VVjOLrMeQ"
     st.markdown(f"[팀 회비 납부 링크]({fee_link})", unsafe_allow_html=True)
