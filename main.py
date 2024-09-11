@@ -5,6 +5,7 @@ from streamlit_folium import st_folium
 from dotenv import load_dotenv
 import os
 from PIL import Image
+from streamlit_image_zoom import image_zoom
 
 # 페이지 설정 (파비콘과 제목 변경)
 st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
@@ -12,8 +13,13 @@ st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ic
 # 이미지 캐싱 함수 (st.cache_resource 사용)
 @st.cache_resource
 def load_image(image_path):
-    img = Image.open(image_path)
-    return img
+    try:
+        img = Image.open(image_path)
+        img = img.convert('RGB')  # PIL 이미지로 변환
+        return img
+    except Exception as e:
+        st.error(f"Error loading image: {e}")
+        return None
 
 
 # Fly.io 환경에서 DATABASE_URL 환경 변수를 사용하여 환경 구분
@@ -75,16 +81,21 @@ st.markdown(f"""
             margin-bottom: 20px;
             text-align: center;
         }}
-        /* 이미지 모양을 원형에 가깝게 조정 및 클릭 기능 제거 */
+        /* 이미지 스타일 */
         img {{
-            pointer-events: none;  /* 클릭 기능 완전히 제거 */
-            border-radius: 50% / 40%;  /* 직사각형에 가까운 타원형 */
+            border-radius: 50% / 40%;
             object-fit: cover;
             width: 150px;
             height: 200px;
-            transform: none !important;  /* 확대 효과 제거 */
-            transition: none !important;  /* 애니메이션 효과 제거 */
+            
+            /* 손가락 확대 허용 */
+            touch-action: auto;
+            user-select: none;
+            max-width: 100%;
+            height: auto;
+            transition: transform 0.3s ease-in-out;
         }}
+
         /* 프로필 제목 (큰 제목 포함, 색상 변경) */
         h1, h2, h3, h4 {{
             color: {header_color};
@@ -152,7 +163,12 @@ menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 
 # 1. 팀 소개 탭
 if menu == "팀 소개":
     st.header("Aloo FC 팀 소개 📢")
-    st.image(load_image("images/logo/alooFC_logo.png"), caption="Aloo FC 로고", width=200)
+    st.write("Aloo FC 로고:")
+
+    # streamlit 기본 이미지 표시로 변경
+    img = load_image("images/logo/alooFC_logo.png")
+    if img:
+        st.image(img, caption="Aloo FC 로고", width=200)
     st.write("Aloo FC는 풋살을 사랑하는 열정적인 팀입니다. 항상 최선을 다해 경기에 임합니다!")
 
     # 유니폼 이미지 (비율 고정 안함)
@@ -219,7 +235,7 @@ elif menu == "팀 멤버 리스트":
                 # 각 선수 카드 스타일
                 image_path = f"images/24_25_players_profile/{member[1].lower()}_{member[0].lower()}_profile.jpg"
                 img = load_image(image_path)
-                st.image(img, width=150, use_column_width=False)  # 직사각형에 가까운 타원형 이미지 적용
+                image_zoom(img, mode="scroll", size=(150, 200), zoom_factor=2.0)
 
                 st.markdown(f"""
                             <div class="card">
@@ -233,7 +249,13 @@ elif menu == "팀 멤버 리스트":
 
         st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
         image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
-        st.image(load_image(image_path), width=200)
+        img = load_image(image_path)
+
+        if img:
+            # 모바일에서는 손가락으로 확대/축소, 웹에서는 스크롤로 확대/축소
+            image_zoom(img, mode="scroll", size=(200, 200), zoom_factor=2.0)
+
+        # st.image(load_image(image_path), width=200)
 
         # 팀 멤버 상세 정보 출력
         st.markdown(f"**이름:** {member_info[0]} {member_info[1]}")
