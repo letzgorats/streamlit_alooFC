@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 import os
 from PIL import Image
 
+# 페이지 설정 (파비콘과 제목 변경)
+st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
+
 # 이미지 캐싱 함수 (st.cache_resource 사용)
 @st.cache_resource
 def load_image(image_path):
@@ -51,7 +54,7 @@ else:
     sidebar_bg = "#f5f5f5"  # 라이트모드용 사이드바 배경색
     header_color = "#4CAF50"
 
-# 전체 배경과 페이지 스타일 적용
+# 전체 배경과 페이지 스타일 적용 및 manifest.json 설정 추가
 st.markdown(f"""
     <style>
         /* 배경색과 텍스트 스타일 */
@@ -79,6 +82,8 @@ st.markdown(f"""
             object-fit: cover;
             width: 150px;
             height: 200px;
+            transform: none !important;  /* 확대 효과 제거 */
+            transition: none !important;  /* 애니메이션 효과 제거 */
         }}
         /* 프로필 제목 (큰 제목 포함, 색상 변경) */
         h1, h2, h3, h4 {{
@@ -92,9 +97,24 @@ st.markdown(f"""
             line-height: 1.5;
             color: {text_color};
         }}
-    </style>
-""", unsafe_allow_html=True)
 
+        /* 모바일 지도 반응형 설정 */
+        @media screen and (max-width: 768px) {{
+            .folium-map {{
+                width: 100% !important;
+                height: 300px !important;  /* 모바일 화면에서 지도의 높이 조정 */
+            }}
+        }}
+    </style>
+
+    <!-- 아이콘과 파비콘 설정 -->
+    <link rel="icon" href="images/logo/alooFC_fabicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="192x192" href="images/logo/alooFC_logo_192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="images/logo/alooFC_logo_512x512.png">
+
+    <!-- Manifest 설정 -->
+    <link rel="manifest" href="/manifest.json">
+""", unsafe_allow_html=True)
 
 
 # 팀 멤버 데이터 가져오기
@@ -238,3 +258,5 @@ elif menu == "회비 정보":
     # 회비 링크 추가
     fee_link = "https://www.imchongmoo.com/share/MtE8J8n0p48O3xGNNIqXapjzLtbXTcfye9AfJCKo5jX-uqYuLbLYDyIhRDUrI9K7Kymvtu7mkw-U8VVjOLrMeQ"
     st.markdown(f"[팀 회비 납부 링크]({fee_link})", unsafe_allow_html=True)
+
+
