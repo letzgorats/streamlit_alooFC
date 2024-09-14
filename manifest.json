@@ -3,6 +3,17 @@
     "name": "AlooFC App",
     "icons": [
         {
+            "src": "/images/logo/alooFC_logo_72x72.png",
+            "type": "image/png",
+            "sizes": "72x72"
+        },
+        {
+            "src": "/images/logo/alooFC_logo_114x114.png",
+            "type": "image/png",
+            "sizes": "114x114"
+        },
+
+        {
             "src": "/images/logo/alooFC_logo_192x192.png",
             "type": "image/png",
             "sizes": "192x192"

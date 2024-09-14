@@ -7,8 +7,16 @@ import os
 from PIL import Image
 from streamlit_image_zoom import image_zoom
 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+from cloudinary.utils import cloudinary_url
+
+
+
 # 페이지 설정 (파비콘과 제목 변경)
 st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
+
 
 # 이미지 캐싱 함수 (st.cache_resource 사용)
 @st.cache_resource
@@ -26,6 +34,15 @@ def load_image(image_path):
 if os.getenv('DATABASE_URL') is None:  # 로컬 환경일 때만 .env 파일 로드
     load_dotenv()
 
+# Initialize Cloudinary
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+
+
 def create_connection():
     # Fly.io 환경에서 DATABASE_URL 환경 변수를 사용
     DATABASE_URL = os.getenv('DATABASE_URL')
@@ -41,6 +58,7 @@ def create_connection():
             port=os.getenv("DB_PORT", "5433")
         )
     return conn
+
 
 # 다크모드/라이트모드 선택 기능 추가
 mode = st.sidebar.selectbox("모드를 선택하세요", ["라이트 모드", "다크 모드"])
@@ -77,17 +95,48 @@ st.markdown(f"""
             background-color: {card_color};
             padding: 15px;
             border-radius: 10px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
             text-align: center;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: auto;
+            text-align: center;
+            height: 180px; /* Set a fixed height */
+            overflow: hidden; /* Hide overflow content */
         }}
+        .card p {{
+            font-size: 14px;
+            line-height: 1.5;
+            color: {{text_color}};
+            margin: 5px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+        .card img {{
+            width: 150px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 50% / 40%;
+        }}
+        .card h4 {{
+            color: {{header_color}};
+            font-weight: bold;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+        
+        .card h2 {{
+            color: {{header_color}};
+        }}
+        
         /* 이미지 스타일 */
         img {{
             border-radius: 50% / 40%;
             object-fit: cover;
             width: 150px;
             height: 200px;
-            
+
             /* 손가락 확대 허용 */
             touch-action: auto;
             user-select: none;
@@ -142,6 +191,7 @@ def get_team_members():
     conn.close()
     return rows
 
+
 # 팀 멤버 이름 목록 가져오기 (검색용)
 def get_member_names():
     conn = create_connection()
@@ -152,9 +202,9 @@ def get_member_names():
     conn.close()
     return ['모든 선수 보기'] + [row[0] for row in rows]
 
+
 # Streamlit 앱 실행
 st.title("⚽️ Aloo FC ⚽️")
-
 
 # 사이드바에 기능 구현
 st.sidebar.title("📋 AlooFC 메뉴 ")
@@ -216,7 +266,7 @@ elif menu == "팀 멤버 리스트":
         cur = conn.cursor()
         cur.execute("""
                 SELECT first_name, last_name, position, role, jersey_number, city, district, 
-                       height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment 
+                       height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment, image_public_id 
                 FROM team_members WHERE first_name || ' ' || last_name = %s
             """, (search_name,))
         member_info = cur.fetchone()
@@ -235,7 +285,13 @@ elif menu == "팀 멤버 리스트":
                 # 각 선수 카드 스타일
                 image_path = f"images/24_25_players_profile/{member[1].lower()}_{member[0].lower()}_profile.jpg"
                 img = load_image(image_path)
-                image_zoom(img, mode="scroll", size=(150, 200), zoom_factor=2.0)
+                # image_zoom(img, mode="scroll", size=(150, 200), zoom_factor=2.0)
+
+                # Use st.image to display the image
+                if img:
+                    st.image(img, use_column_width=True)
+                else:
+                    st.write("이미지를 불러올 수 없습니다.")
 
                 st.markdown(f"""
                             <div class="card">
@@ -247,30 +303,90 @@ elif menu == "팀 멤버 리스트":
                             """, unsafe_allow_html=True)
     else:
 
-        st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
-        image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
-        img = load_image(image_path)
+        (first_name, last_name, position, role, jersey_number, city, district,
+         height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment,
+         image_public_id) = member_info
 
-        if img:
-            # 모바일에서는 손가락으로 확대/축소, 웹에서는 스크롤로 확대/축소
-            image_zoom(img, mode="scroll", size=(200, 200), zoom_factor=2.0)
+        st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
+
+        image_public_id = f"{image_public_id}"
+        st.write(image_public_id)
+        image_url, options = cloudinary_url(
+            image_public_id,
+            sign_url=True,
+            format='jpg',
+            transformation=[
+                {'width': 200, 'height': 200, 'crop': 'fill', 'gravity': 'face'}
+            ]
+            ,secure=True)
+
+        st.write(f"Generated Image URL: {image_url}")
+
+        st.markdown(f"""
+                            <div class="profile-card">
+                                <img src="{image_url}" alt="{member_info[0]} {member_info[1]}" style="display:block; margin-left:auto; margin-right:auto; width:200px; height:200px; border-radius:50%;" />
+                                <h2>{member_info[0]} {member_info[1]}</h2>
+                                <p><strong>포지션:</strong> {member_info[2]}</p>
+                                <p><strong>직책:</strong> {member_info[3]}</p>
+                                <p><strong>등번호:</strong> {member_info[4]}</p>
+                                <p><strong>지역:</strong> {member_info[5]}, {member_info[6]}</p>
+                                <p><strong>키:</strong> {member_info[7]} cm </p>
+                                <p><strong>몸무게:</strong> {member_info[8]} kg </p>
+                                <p><strong>주발:</strong> {member_info[9]}</p>
+                                <p><strong>신발 사이즈:</strong> {member_info[10]}</p>
+                                <p><strong>체형:</strong> {member_info[11]}</p>
+                                <p><strong>응원하는 팀:</strong> {member_info[12]}</p>
+                                <p><strong>좋아하는 선수:</strong> {member_info[13]}</p>
+                                <p><strong>각오 한 마디:</strong> {member_info[14]}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+        # CSS for styling
+        st.markdown("""
+                        <style>
+                            .profile-card {
+                                background-color: #f5f5f5;
+                                padding: 20px;
+                                border-radius: 10px;
+                                text-align: center;
+                                margin: auto;
+                                width: 60%;
+                                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                            }
+                            .profile-card img {
+                                border-radius: 50%;
+                                width: 200px;
+                                height: 200px;
+                                object-fit: cover;
+                                margin-bottom: 20px;
+                            }
+                            .profile-card h2 {
+                                color: #4CAF50;
+                                margin-bottom: 10px;
+                            }
+                            .profile-card p {
+                                font-size: 16px;
+                                color: #333;
+                                margin: 5px 0;
+                            }
+                        </style>
+                    """, unsafe_allow_html=True)
+
+
+
+
+        # image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
+        # img = load_image(image_path)
+
+        # if img:
+        #     # 모바일에서는 손가락으로 확대/축소, 웹에서는 스크롤로 확대/축소
+        #     image_zoom(img, mode="scroll", size=(200, 200), zoom_factor=2.0)
 
         # st.image(load_image(image_path), width=200)
 
         # 팀 멤버 상세 정보 출력
-        st.markdown(f"**이름:** {member_info[0]} {member_info[1]}")
-        st.markdown(f"**포지션:** {member_info[2]}")
-        st.markdown(f"**직책:** {member_info[3]}")
-        st.markdown(f"**등번호:** {member_info[4]}")
-        st.markdown(f"**지역:** {member_info[5]}, {member_info[6]}")
-        st.markdown(f"**키:** {member_info[7]} cm")
-        st.markdown(f"**몸무게:** {member_info[8]} kg")
-        st.markdown(f"**주발:** {member_info[9]}")
-        st.markdown(f"**신발 사이즈:** {member_info[10]} mm")
-        st.markdown(f"**체형:** {member_info[11]}")
-        st.markdown(f"**응원하는 팀:** {member_info[12]}")
-        st.markdown(f"**좋아하는 선수:** {member_info[13]}")
-        st.markdown(f"**각오 한 마디:** {member_info[14]}")
+
+
 
 # 3. 회비 정보 탭
 elif menu == "회비 정보":
@@ -280,5 +396,3 @@ elif menu == "회비 정보":
     # 회비 링크 추가
     fee_link = "https://www.imchongmoo.com/share/MtE8J8n0p48O3xGNNIqXapjzLtbXTcfye9AfJCKo5jX-uqYuLbLYDyIhRDUrI9K7Kymvtu7mkw-U8VVjOLrMeQ"
     st.markdown(f"[팀 회비 납부 링크]({fee_link})", unsafe_allow_html=True)
-
-
