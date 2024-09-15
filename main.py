@@ -5,21 +5,26 @@ from streamlit_folium import st_folium
 from dotenv import load_dotenv
 import os
 from PIL import Image
-from streamlit_image_zoom import image_zoom
-
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-from cloudinary.utils import cloudinary_url
-
+# from streamlit_image_zoom import image_zoom
+from supabase import create_client, Client
+from streamlit_javascript import st_javascript  # 추가
 
 
 # 페이지 설정 (파비콘과 제목 변경)
 st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
 
+# Fly.io 환경에서 DATABASE_URL 환경 변수를 사용하여 환경 구분
+if os.getenv('DATABASE_URL') is None:  # 로컬 환경일 때만 .env 파일 로드
+    load_dotenv()
 
-# 이미지 캐싱 함수 (st.cache_resource 사용)
-@st.cache_resource
+# supabase url 과 키 가져오기
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
+# supabase 클라이언트 생성
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# 이미지 로드 함수 (cache.data 캐싱 사용)
+@st.cache_data
 def load_image(image_path):
     try:
         img = Image.open(image_path)
@@ -29,20 +34,28 @@ def load_image(image_path):
         st.error(f"Error loading image: {e}")
         return None
 
+# 이미지 URL 생성 함수
+@st.cache_data
+def get_image_url(path):
+    # URL 만료 시간 설정 (예: 1시간 후 만료)
+    expires_in = 3600  # 초 단위
 
-# Fly.io 환경에서 DATABASE_URL 환경 변수를 사용하여 환경 구분
-if os.getenv('DATABASE_URL') is None:  # 로컬 환경일 때만 .env 파일 로드
-    load_dotenv()
+    res = supabase.storage.from_('player-profiles').create_signed_url(path, expires_in)
+    if res:
+        return res.get('signedURL')
+    else:
+        st.error("이미지 URL을 생성하는 데 실패했습니다.")
+        return None
 
 # Initialize Cloudinary
-cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-    secure=True
-)
+# cloudinary.config(
+#     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+#     api_key=os.getenv('CLOUDINARY_API_KEY'),
+#     api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+#     secure=True
+# )
 
-
+# 데이터베이스 연결 함수
 def create_connection():
     # Fly.io 환경에서 DATABASE_URL 환경 변수를 사용
     DATABASE_URL = os.getenv('DATABASE_URL')
@@ -59,6 +72,19 @@ def create_connection():
         )
     return conn
 
+# 화면 너비 가져오기 함수
+def get_screen_width():
+    width = st_javascript("window.innerWidth")
+    return int(width) if width else 800  # 기본값 설정
+
+screen_width = get_screen_width()
+
+# 컬럼 수 결정 함수
+def get_num_columns():
+    if screen_width < 600:
+        return 1
+    else:
+        return 3
 
 # 다크모드/라이트모드 선택 기능 추가
 mode = st.sidebar.selectbox("모드를 선택하세요", ["라이트 모드", "다크 모드"])
@@ -97,37 +123,58 @@ st.markdown(f"""
             border-radius: 10px;
             text-align: center;
             box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: auto;
-            text-align: center;
-            height: 180px; /* Set a fixed height */
-            overflow: hidden; /* Hide overflow content */
+            margin-bottom: 20px;
+            
+        }}
+        
+        .card img {{
+            width: 150px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+        }}
+        .card h4 {{
+            color: {{header_color}};
+            font-weight: bold;
+            margin-bottom: 10px;
+            word-wrap: break-word; /* 단어를 줄 바꿈 */
         }}
         .card p {{
             font-size: 14px;
             line-height: 1.5;
             color: {{text_color}};
             margin: 5px 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }}
-        .card img {{
-            width: 150px;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 50% / 40%;
-        }}
-        .card h4 {{
-            color: {{header_color}};
-            font-weight: bold;
-            margin-bottom: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            
         }}
         
         .card h2 {{
             color: {{header_color}};
+        }}
+        
+        .profile-card {{
+                        background-color: {card_color};
+                        padding: 20px;
+                        border-radius: 10px;
+                        text-align: center;
+                        margin: auto;
+                        width: 60%;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    }}
+        .profile-card img {{
+            border-radius: 50%;
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            margin-bottom: 20px;
+        }}
+        .profile-card h2 {{
+            color:  {header_color};
+            margin-bottom: 10px;
+        }}
+        .profile-card p {{
+            font-size: 16px;
+            color: {text_color};
+            margin: 5px 0;
         }}
         
         /* 이미지 스타일 */
@@ -165,6 +212,16 @@ st.markdown(f"""
                 height: 300px !important;  /* 모바일 화면에서 지도의 높이 조정 */
             }}
         }}
+        /* 모바일 환경에서 카드 너비 조정 */
+        @media screen and (max-width: 600px) {{
+            .card {{
+                width: 100%;
+            }}
+            .profile-card {{
+                width: 100%;
+            }}
+
+        }}
     </style>
 
     <!-- 아이콘과 파비콘 설정 -->
@@ -179,17 +236,18 @@ st.markdown(f"""
 
 # 팀 멤버 데이터 가져오기
 def get_team_members():
-    conn = create_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT first_name, last_name, position, role, jersey_number, city, district, 
-               height, weight, main_foot, shoe_size, body_type, support_team, commitment 
-        FROM team_members
-    """)
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
+    with st.spinner('팀 멤버 데이터를 불러오는 중입니다...'):
+        conn = create_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT first_name, last_name, position, role, jersey_number, city, district, 
+                   height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment, image_path_in_storage 
+            FROM team_members
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
 
 
 # 팀 멤버 이름 목록 가져오기 (검색용)
@@ -201,6 +259,53 @@ def get_member_names():
     cur.close()
     conn.close()
     return ['모든 선수 보기'] + [row[0] for row in rows]
+
+# 프로필 카드 표시 함수
+def display_profile_card(member,all_players):
+    (first_name, last_name, position, role, jersey_number, city, district,
+     height, weight, main_foot, shoe_size, body_type, support_team, support_player,
+     commitment,image_path_in_storage) = member
+
+    image_url = get_image_url(image_path_in_storage)
+
+    if all_players:
+
+        if image_url:
+            st.markdown(f"""
+                <div class="card">
+                    <img src="{image_url}" alt="{first_name} {last_name}" width="150" height="200"">
+                    <h4>{first_name} {last_name}</h4>
+                    <p><strong>직책:</strong> {role}</p>
+                    <p><strong>포지션:</strong> {position}</p>
+                    <p><strong>등번호:</strong> {jersey_number}</p>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.warning(f"{first_name} {last_name} 님의 이미지를 불러올 수 없습니다.")
+
+    else:
+        if image_url:
+            st.markdown(f"""
+                <div class="profile-card">
+                    <img src="{image_url}" alt="{first_name} {last_name}" width="150" height="200"">
+                    <h4>{first_name} {last_name}</h4>
+                    <p><strong>직책:</strong> {role}</p>
+                    <p><strong>포지션:</strong> {position}</p>
+                    <p><strong>등번호:</strong> {jersey_number}</p>
+                    <p><strong>지역:</strong> {city}, {district}</p>
+                    <p><strong>키:</strong> {height} cm </p>
+                    <p><strong>몸무게:</strong> {weight} kg </p>
+                    <p><strong>주발:</strong> {main_foot}</p>
+                    <p><strong>신발 사이즈:</strong> {shoe_size}</p>
+                    <p><strong>체형:</strong> {body_type}</p>
+                    <p><strong>응원하는 팀:</strong> {support_team}</p>
+                    <p><strong>좋아하는 선수:</strong> {support_player}</p>
+                    <p><strong>각오 한 마디:</strong> {commitment}</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+        else:
+            st.warning(f"{first_name} {last_name} 님의 이미지를 불러올 수 없습니다.")
 
 
 # Streamlit 앱 실행
@@ -214,9 +319,9 @@ menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 
 if menu == "팀 소개":
     st.header("Aloo FC 팀 소개 📢")
     st.write("Aloo FC 로고:")
-
     # streamlit 기본 이미지 표시로 변경
     img = load_image("images/logo/alooFC_logo.png")
+
     if img:
         st.image(img, caption="Aloo FC 로고", width=200)
     st.write("Aloo FC는 풋살을 사랑하는 열정적인 팀입니다. 항상 최선을 다해 경기에 임합니다!")
@@ -254,9 +359,8 @@ if menu == "팀 소개":
 # 2. 팀 멤버 리스트 탭
 elif menu == "팀 멤버 리스트":
     st.header("팀 멤버 리스트 👥")
-
     # 팀원 검색 기능 추가 (모든 선수 보기 포함)
-    search_name = st.selectbox("선수를 선택하세요:", options=get_member_names())
+    search_name = st.selectbox("선수를 검색하시면 세부정보를 확인할 수 있습니다:", options=get_member_names())
 
     member_info = None  # 초기화
 
@@ -266,7 +370,7 @@ elif menu == "팀 멤버 리스트":
         cur = conn.cursor()
         cur.execute("""
                 SELECT first_name, last_name, position, role, jersey_number, city, district, 
-                       height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment, image_public_id 
+                       height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment, image_path_in_storage 
                 FROM team_members WHERE first_name || ' ' || last_name = %s
             """, (search_name,))
         member_info = cur.fetchone()
@@ -276,123 +380,25 @@ elif menu == "팀 멤버 리스트":
     if not member_info:
         # '모든 선수 보기' 선택 시 모든 선수의 프로필 사진 출력
         team_members = get_team_members()
-
         # 3명씩 한 줄에 나열
-        cols = st.columns(3)
+        num_cols = get_num_columns()
+        cols = st.columns(num_cols)
 
         for i, member in enumerate(team_members):
-            with cols[i % 3]:
+            with cols[i % num_cols]:
                 # 각 선수 카드 스타일
-                image_path = f"images/24_25_players_profile/{member[1].lower()}_{member[0].lower()}_profile.jpg"
-                img = load_image(image_path)
-                # image_zoom(img, mode="scroll", size=(150, 200), zoom_factor=2.0)
+                display_profile_card(member,True)
 
-                # Use st.image to display the image
-                if img:
-                    st.image(img, use_column_width=True)
-                else:
-                    st.write("이미지를 불러올 수 없습니다.")
-
-                st.markdown(f"""
-                            <div class="card">
-                                <h4 style="color: #4CAF50;">{member[0]} {member[1]}</h4>
-                                <p style="font-weight: bold;"><strong>직책:</strong> {member[3]}</p>
-                                <p><strong>포지션:</strong> {member[2]}</p>
-                                <p><strong>등번호:</strong> {member[4]}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
     else:
-
-        (first_name, last_name, position, role, jersey_number, city, district,
-         height, weight, main_foot, shoe_size, body_type, support_team, support_player, commitment,
-         image_public_id) = member_info
-
+        # 특정 선수 프로필 상세 보기
         st.subheader(f"{member_info[0]} {member_info[1]}의 프로필 📄")
-
-        image_public_id = f"{image_public_id}"
-        st.write(image_public_id)
-        image_url, options = cloudinary_url(
-            image_public_id,
-            sign_url=True,
-            format='jpg',
-            transformation=[
-                {'width': 200, 'height': 200, 'crop': 'fill', 'gravity': 'face'}
-            ]
-            ,secure=True)
-
-        st.write(f"Generated Image URL: {image_url}")
-
-        st.markdown(f"""
-                            <div class="profile-card">
-                                <img src="{image_url}" alt="{member_info[0]} {member_info[1]}" style="display:block; margin-left:auto; margin-right:auto; width:200px; height:200px; border-radius:50%;" />
-                                <h2>{member_info[0]} {member_info[1]}</h2>
-                                <p><strong>포지션:</strong> {member_info[2]}</p>
-                                <p><strong>직책:</strong> {member_info[3]}</p>
-                                <p><strong>등번호:</strong> {member_info[4]}</p>
-                                <p><strong>지역:</strong> {member_info[5]}, {member_info[6]}</p>
-                                <p><strong>키:</strong> {member_info[7]} cm </p>
-                                <p><strong>몸무게:</strong> {member_info[8]} kg </p>
-                                <p><strong>주발:</strong> {member_info[9]}</p>
-                                <p><strong>신발 사이즈:</strong> {member_info[10]}</p>
-                                <p><strong>체형:</strong> {member_info[11]}</p>
-                                <p><strong>응원하는 팀:</strong> {member_info[12]}</p>
-                                <p><strong>좋아하는 선수:</strong> {member_info[13]}</p>
-                                <p><strong>각오 한 마디:</strong> {member_info[14]}</p>
-                            </div>
-                        """, unsafe_allow_html=True)
-
-        # CSS for styling
-        st.markdown("""
-                        <style>
-                            .profile-card {
-                                background-color: #f5f5f5;
-                                padding: 20px;
-                                border-radius: 10px;
-                                text-align: center;
-                                margin: auto;
-                                width: 60%;
-                                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                            }
-                            .profile-card img {
-                                border-radius: 50%;
-                                width: 200px;
-                                height: 200px;
-                                object-fit: cover;
-                                margin-bottom: 20px;
-                            }
-                            .profile-card h2 {
-                                color: #4CAF50;
-                                margin-bottom: 10px;
-                            }
-                            .profile-card p {
-                                font-size: 16px;
-                                color: #333;
-                                margin: 5px 0;
-                            }
-                        </style>
-                    """, unsafe_allow_html=True)
-
-
-
-
-        # image_path = f"images/24_25_players_profile/{member_info[1].lower()}_{member_info[0].lower()}_profile.jpg"
-        # img = load_image(image_path)
-
-        # if img:
-        #     # 모바일에서는 손가락으로 확대/축소, 웹에서는 스크롤로 확대/축소
-        #     image_zoom(img, mode="scroll", size=(200, 200), zoom_factor=2.0)
-
-        # st.image(load_image(image_path), width=200)
-
-        # 팀 멤버 상세 정보 출력
-
+        display_profile_card(member_info,False)
 
 
 # 3. 회비 정보 탭
 elif menu == "회비 정보":
     st.header("Aloo FC 팀 회비 정보 💰")
     st.write("아래 링크를 통해 팀 회비를 납부해주세요:")
-
     # 회비 링크 추가
     fee_link = "https://www.imchongmoo.com/share/MtE8J8n0p48O3xGNNIqXapjzLtbXTcfye9AfJCKo5jX-uqYuLbLYDyIhRDUrI9K7Kymvtu7mkw-U8VVjOLrMeQ"
     st.markdown(f"[팀 회비 납부 링크]({fee_link})", unsafe_allow_html=True)
