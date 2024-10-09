@@ -34,7 +34,9 @@ def show_attendance():
 
     # 참석률 그래프
     fig = px.bar(df_sorted, x='참석률 (%)', y='이름', orientation='h', color='참석률 (%)',
-                 color_continuous_scale='Blues')
+                 color_continuous_scale='Blues',
+                 category_orders={'이름': df_sorted['이름'].tolist()[::-1]})  # 역순으로 이름 정렬
+
     st.plotly_chart(fig)
 
     # 참석왕 및 불참왕 계산
@@ -63,7 +65,15 @@ def show_attendance():
 
         if other_kings:
             other_names = ', '.join(other_kings)
-            st.markdown(f"<p class='attendance-king-names'>동일한 참석률의 멤버\n{other_names}</p>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                        <div style='border:3px solid #4CAF50; padding:10px; margin-top:10px;'>
+                            <strong>동일한 참석률의 멤버</strong><br>
+                            {other_names}
+                        </div>
+                        """,
+                unsafe_allow_html=True
+            )
 
     # 불참왕 표시 (오른쪽 컬럼)
     with cols[1]:
@@ -72,7 +82,15 @@ def show_attendance():
 
         if other_absentees:
             other_names = ', '.join(other_absentees)
-            st.markdown(f"<p class='absence-king-names'>동일한 불참률의 멤버\n{other_names}</p>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                        <div style='border:3px solid #f44336; padding:10px; margin-top:10px;'>
+                            <strong>동일한 불참률의 멤버</strong><br>
+                            {other_names}
+                        </div>
+                        """,
+                unsafe_allow_html=True
+            )
 
     # 최근 2개월 데이터 처리
     show_recent_attendance()
@@ -94,11 +112,11 @@ def display_member_card(member_name):
         first_name, last_name, role, position, image_path = member_info
         image_url = get_image_url(image_path)
         st.markdown(f"""
-                   <div class="small-card">
-                       <img src="{image_url}" alt="{first_name} {last_name}">
-                       <h4>{first_name} {last_name}</h4>
-                   </div>
-               """, unsafe_allow_html=True)
+                       <div class="small-card">
+                           <img src="{image_url}" alt="{first_name} {last_name}">
+                           <h4>{first_name} {last_name}</h4>
+                       </div>
+                   """, unsafe_allow_html=True)
 
 def show_recent_attendance():
     st.subheader("📅 최근 2개월 참석 현황")
@@ -131,9 +149,13 @@ def show_recent_attendance():
         df = pd.DataFrame(data, columns=['이름', '참석 경기 수'])
         df['참석 경기 수'] = df['참석 경기 수'].fillna(0)
 
+        # 참석 경기 수에 따라 이름 정렬
+        df_sorted = df.sort_values(by='참석 경기 수', ascending=False)
+
         # 그래프 표시
-        fig = px.bar(df, x='이름', y='참석 경기 수', color='참석 경기 수',
-                     color_continuous_scale='Greens')
+        fig = px.bar(df_sorted, x='이름', y='참석 경기 수', color='참석 경기 수',
+                     color_continuous_scale='Greens',
+                     category_orders={'이름': df_sorted['이름'].tolist()})
         st.plotly_chart(fig)
 
     cur.close()
