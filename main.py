@@ -6,6 +6,7 @@ from team_members import show_team_members
 from fee_info import show_fee_info
 from utils import get_supabase_client
 from attendance import show_attendance
+from player_stats import show_player_stats
 
 # 페이지 설정 (파비콘과 제목 변경)
 st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
@@ -138,6 +139,54 @@ st.markdown(f"""
             line-height: 1.5;
             color: {text_color};
         }}
+        
+        /* 작은 카드 스타일 */
+        .small-card {{
+            background-color: #ffffff;  /* 카드 배경색 (원하시는 색상으로 변경 가능) */
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            width: 150px;  /* 카드 너비 */
+            box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        }}
+        
+        .small-card img {{
+            width: 100px;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 5px;
+        }}
+        
+        .small-card h4 {{
+            color: {header_color};
+            font-size: 16px;
+            margin-bottom: 5px;
+        }}
+        
+        .small-card p {{
+            font-size: 12px;
+            color: {text_color};
+            margin: 2px 0;
+        }}
+        
+        /* 참석왕/불참왕 동일 참석률 멤버 이름 스타일 */
+        .attendance-king-names {{
+            color: #FF005C;  /* 핑크색 */
+            font-size: 14px;
+        }}
+        
+        .absence-king-names {{
+            color: gray;
+            font-size: 14px;
+        }}
+        /* 컬럼 내부 요소 정렬 */
+        .stColumn > div {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }}
 
         /* 모바일 지도 반응형 설정 */
         @media screen and (max-width: 768px) {{
@@ -146,6 +195,8 @@ st.markdown(f"""
                 height: 300px !important;  /* 모바일 화면에서 지도의 높이 조정 */
             }}
         }}
+        
+        
         /* 모바일 환경에서 카드 너비 조정 */
         @media screen and (max-width: 600px) {{
             .card {{
@@ -156,6 +207,7 @@ st.markdown(f"""
             }}
 
         }}
+        
     </style>
 
     <!-- 아이콘과 파비콘 설정 -->
@@ -173,7 +225,7 @@ st.title("⚽️ Aloo FC ⚽️")
 
 # 사이드바에 기능 구현
 st.sidebar.title("📋 AlooFC 메뉴 ")
-menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 리스트", "회비 정보","참석률 분석"])
+menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 리스트", "회비 정보","참석률 분석","시즌 기록"])
 
 # Supabase 클라이언트 생성
 supabase = get_supabase_client()
@@ -193,3 +245,7 @@ elif menu == "회비 정보":
 # 4. 참석률 분석 탭
 elif menu == "참석률 분석":
     show_attendance()
+
+# 5. 시즌 기록 탭
+elif menu == "시즌 기록":
+    show_player_stats()

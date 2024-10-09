@@ -85,7 +85,7 @@ def display_profile_card(member, all_players):
      commitment,image_path_in_storage) = member
 
     # 이제 supabase 클라이언트를 함수 인자로 전달할 필요 없이 사용 가능
-    image_url = get_image_url(supabase, image_path_in_storage)
+    image_url = get_image_url(image_path_in_storage)
 
     if all_players:
 

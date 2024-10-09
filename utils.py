@@ -40,11 +40,11 @@ supabase = get_supabase_client()
 
 # 이미지 URL 생성 함수
 @st.cache_data(ttl=604500)
-def get_image_url(_supabase_client,path):
+def get_image_url(path):
     # URL 만료 시간 설정 (예: 1시간 후 만료)
     expires_in = 604800  # 초 단위
 
-    res = _supabase_client.storage.from_('player-profiles').create_signed_url(path, expires_in)
+    res = supabase.storage.from_('player-profiles').create_signed_url(path, expires_in)
     if res:
         return res.get('signedURL')
     else:

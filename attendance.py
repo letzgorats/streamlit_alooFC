@@ -44,42 +44,61 @@ def show_attendance():
     attendance_kings = df[df['참석률 (%)'] == max_attendance]['이름'].tolist()
     absence_kings = df[df['참석률 (%)'] == min_attendance]['이름'].tolist()
 
-    # 참석왕 표시
-    st.subheader("🏆 참석왕")
-    display_member_card(attendance_kings)
+    # 대표 멤버 선택 (이름순 정렬)
+    attendance_kings.sort()
+    representative_king = attendance_kings[0]
+    other_kings = attendance_kings[1:]
 
-    # 불참왕 표시
-    st.subheader("😢 불참왕")
-    display_member_card(absence_kings)
+    absence_kings.sort()
+    representative_absentee = absence_kings[0]
+    other_absentees = absence_kings[1:]
+
+    # 컬럼 생성
+    cols = st.columns(2)
+
+    # 참석왕 표시 (왼쪽 컬럼)
+    with cols[0]:
+        st.subheader("🏆 참석왕")
+        display_member_card(representative_king)
+
+        if other_kings:
+            other_names = ', '.join(other_kings)
+            st.markdown(f"<p class='attendance-king-names'>동일한 참석률의 멤버\n{other_names}</p>", unsafe_allow_html=True)
+
+    # 불참왕 표시 (오른쪽 컬럼)
+    with cols[1]:
+        st.subheader("😢 불참왕")
+        display_member_card(representative_absentee)
+
+        if other_absentees:
+            other_names = ', '.join(other_absentees)
+            st.markdown(f"<p class='absence-king-names'>동일한 불참률의 멤버\n{other_names}</p>", unsafe_allow_html=True)
 
     # 최근 2개월 데이터 처리
     show_recent_attendance()
 
-def display_member_card(members):
-    for member_name in members:
-        # 멤버 정보 가져오기
-        conn = create_connection()
-        cur = conn.cursor()
-        cur.execute("""
+def display_member_card(member_name):
+    # 멤버 정보 가져오기
+    conn = create_connection()
+    cur = conn.cursor()
+    cur.execute("""
             SELECT first_name, last_name, role, position, image_path_in_storage
             FROM team_members
             WHERE first_name || ' ' || last_name = %s
         """, (member_name,))
-        member_info = cur.fetchone()
-        cur.close()
-        conn.close()
+    member_info = cur.fetchone()
+    cur.close()
+    conn.close()
 
-        if member_info:
-            first_name, last_name, role, position, image_path = member_info
-            image_url = get_image_url(supabase, image_path)
-            st.markdown(f"""
-                <div class="card">
-                    <img src="{image_url}" alt="{first_name} {last_name}">
-                    <h4>{first_name} {last_name}</h4>
-                    <p><strong>직책:</strong> {role}</p>
-                    <p><strong>포지션:</strong> {position}</p>
-                </div>
-            """, unsafe_allow_html=True)
+    if member_info:
+        first_name, last_name, role, position, image_path = member_info
+        image_url = get_image_url(image_path)
+        st.markdown(f"""
+                   <div class="small-card">
+                       <img src="{image_url}" alt="{first_name} {last_name}">
+                       <h4>{first_name} {last_name}</h4>
+                   </div>
+               """, unsafe_allow_html=True)
 
 def show_recent_attendance():
     st.subheader("📅 최근 2개월 참석 현황")
@@ -88,8 +107,7 @@ def show_recent_attendance():
     from datetime import datetime, timedelta
     today = datetime.today()
     first_day_of_current_month = today.replace(day=1)
-    last_month = first_day_of_current_month - timedelta(days=1)
-    first_day_of_last_month = last_month.replace(day=1)
+    first_day_of_last_month = (first_day_of_current_month - timedelta(days=1)).replace(day=1)
 
     months = [first_day_of_last_month.strftime('%Y-%m'), first_day_of_current_month.strftime('%Y-%m')]
 
