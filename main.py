@@ -7,17 +7,13 @@ from fee_info import show_fee_info
 from utils import get_supabase_client
 from attendance import show_attendance
 from player_stats import show_player_stats
+from auth import login, logout, is_logged_in, signup, reset_password_confirm, reset_password
+from prediction import prediction_app  # 예측 투표 기능 임포트
+from prediction import calculate_prediction_rates
+import urllib.parse
 
 # 페이지 설정 (파비콘과 제목 변경)
 st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
-
-# Initialize Cloudinary
-# cloudinary.config(
-#     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-#     api_key=os.getenv('CLOUDINARY_API_KEY'),
-#     api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-#     secure=True
-# )
 
 
 # 다크모드/라이트모드 선택 기능 추가
@@ -69,7 +65,7 @@ st.markdown(f"""
             
         }}
         .card h4 {{
-            color: {{header_color}};
+            color: {header_color};
             font-weight: bold;
             margin-bottom: 10px;
             word-wrap: break-word; /* 단어를 줄 바꿈 */
@@ -77,13 +73,13 @@ st.markdown(f"""
         .card p {{
             font-size: 14px;
             line-height: 1.5;
-            color: {{text_color}};
+            color: {text_color};
             margin: 5px 0;
             
         }}
         
         .card h2 {{
-            color: {{header_color}};
+            color: {header_color};
         }}
         
         .profile-card {{
@@ -110,6 +106,25 @@ st.markdown(f"""
             font-size: 16px;
             color: {text_color};
             margin: 5px 0;
+        }}
+        
+        /* 버튼 스타일 수정 */
+        div.stButton > button {{
+            color: {text_color} !important;
+            background-color: #4CAF50; /* 원하는 버튼 배경색으로 설정 */
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }}
+        
+        /* 버튼에 호버 효과 추가 */
+        div.stButton > button:hover {{
+            background-color: #45a049;
         }}
         
         /* 이미지 스타일 */
@@ -220,32 +235,86 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-# Streamlit 앱 실행
-st.title("⚽️ Aloo FC ⚽️")
+def main():
+    # Streamlit 앱 실행
+    st.title("⚽️ Aloo FC ⚽️")
 
-# 사이드바에 기능 구현
-st.sidebar.title("📋 AlooFC 메뉴 ")
-menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 리스트", "회비 정보","참석률 분석","시즌 기록"])
+    # 사이드바에 기능 구현
+    st.sidebar.title("📋 AlooFC 메뉴 ")
+    menu = st.sidebar.radio("메뉴를 선택하세요", ["팀 소개", "팀 멤버 리스트", "회비 정보","참석률 분석","시즌 기록","EPL 예측 투표","예측률 순위표"])
 
-# Supabase 클라이언트 생성
-supabase = get_supabase_client()
+    # Supabase 클라이언트 생성
+    supabase = get_supabase_client()
 
-# 1. 팀 소개 탭
-if menu == "팀 소개":
-    show_team_intro()
+    # 이전 메뉴와 현재 메뉴를 비교하여 메뉴가 변경되었을 때만 세션 상태 초기화
+    if 'previous_menu' not in st.session_state:
+        st.session_state['previous_menu'] = menu
+    elif st.session_state['previous_menu'] != menu:
+        reset_session_state()
+        st.session_state['previous_menu'] = menu
 
-# 2. 팀 멤버 리스트 탭
-elif menu == "팀 멤버 리스트":
-    show_team_members()
+    # URL 쿼리 파라미터 확인
+    query_params = st.query_params
+    if 'token' in query_params:
+        encoded_token = query_params['token'][0]
+        # 토큰을 URL 디코딩
+        reset_token = urllib.parse.unquote(encoded_token)
+        # 토큰을 문자열로 변환 (PyJWT 버전에 따라 필요)
+        reset_token = urllib.parse.unquote(encoded_token)
+        reset_password_confirm(reset_token)
+        return
 
-# 3. 회비 정보 탭
-elif menu == "회비 정보":
-    show_fee_info()
+    # 회원가입 및 비밀번호 재설정 페이지 표시
+    if st.session_state.get('show_signup', False):
+        signup()
+        return
 
-# 4. 참석률 분석 탭
-elif menu == "참석률 분석":
-    show_attendance()
+    if st.session_state.get('show_reset_password', False):
+        reset_password()
+        return
 
-# 5. 시즌 기록 탭
-elif menu == "시즌 기록":
-    show_player_stats()
+    # 1. 팀 소개 탭
+    if menu == "팀 소개":
+        show_team_intro()
+
+    # 2. 팀 멤버 리스트 탭
+    elif menu == "팀 멤버 리스트":
+        show_team_members()
+
+    # 3. 회비 정보 탭
+    elif menu == "회비 정보":
+        show_fee_info()
+
+    # 4. 참석률 분석 탭
+    elif menu == "참석률 분석":
+        show_attendance()
+
+    # 5. 시즌 기록 탭
+    elif menu == "시즌 기록":
+        show_player_stats()
+
+    # 6. EPL 예측 투표
+    elif menu == "EPL 예측 투표":
+        # 로그인 여부 확인
+        if is_logged_in():
+            prediction_app()
+            # 로그아웃 버튼 추가
+            if st.sidebar.button("로그아웃"):
+                logout()
+                st.rerun()
+        else:
+            st.warning("이 페이지는 로그인한 사용자만 접근 가능합니다.")
+            login()  # 로그인 페이지로 이동
+    elif menu == "예측률 순위표":
+        calculate_prediction_rates()
+
+def reset_session_state():
+    # 세션 상태에서 페이지 전환에 사용되는 키들을 삭제하여 초기화
+    keys_to_reset = ['show_signup', 'show_reset_password']
+    for key in keys_to_reset:
+        if key in st.session_state:
+            del st.session_state[key]
+
+if __name__ == "__main__":
+    main()
+

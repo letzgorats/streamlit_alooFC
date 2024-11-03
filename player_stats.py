@@ -90,8 +90,12 @@ def load_player_stats(selected_season):
                     COALESCE(SUM(ps.goals + ps.assists), 0) AS 공격포인트,
                     COALESCE(SUM(CASE WHEN ps.mom THEN 1 ELSE 0 END), 0) AS MOM_횟수,
                     ROUND(COALESCE(SUM(ps.goals + ps.assists), 0)::numeric / NULLIF(COUNT(DISTINCT ps.match_id), 0), 2) AS 경기당_공포_전환율,
-                    CASE WHEN COUNT(DISTINCT ps.injury) = 1 AND MAX(ps.injury) = 'x' THEN 'x'
-                         ELSE STRING_AGG(DISTINCT CASE WHEN ps.injury <> 'x' THEN ps.injury ELSE NULL END, ', ')
+                    CASE 
+                        WHEN COUNT(DISTINCT ps.injury) = 1 AND MAX(ps.injury) = 'x' THEN 'x'
+                        ELSE STRING_AGG(DISTINCT CASE 
+                            WHEN ps.injury <> 'x' AND (ps.injury_recovered = false OR ps.injury_recovered IS NULL) THEN ps.injury 
+                            ELSE NULL 
+                        END, ', ')
                     END AS 부상현황
                 FROM team_members tm
                 LEFT JOIN player_stats ps ON tm.member_id = ps.member_id
