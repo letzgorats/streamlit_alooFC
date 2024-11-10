@@ -4,8 +4,10 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import streamlit as st
 from PIL import Image
+import pandas as pd
 import jwt
 import datetime
+from sqlalchemy import create_engine  # 추가
 
 # 로컬 환경에서만 .env 파일 로드
 # if os.getenv('DATABASE_URL') is None:
@@ -13,6 +15,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')  # 보안을 위해 실제 비밀 키를 사용하세요
 if not SECRET_KEY:
     st.error("SECRET_KEY가 설정되지 않았습니다. .env 파일을 확인하세요.")
+
 
 # 데이터베이스 연결 함수
 def create_connection():
@@ -150,3 +153,13 @@ def send_reset_email(to_email, reset_link):
         return False  # 이메일 전송 실패 시 False 반환
 
     return True  # 이메일 전송 성공 시 True 반환
+
+
+def get_match_counts_by_place():
+    conn = create_connection()
+    query = "SELECT place, COUNT(*) as match_count FROM matches GROUP BY place;"
+    try:
+        match_counts = pd.read_sql(query, conn)
+    finally:
+        conn.close()
+    return match_counts
