@@ -84,12 +84,12 @@ def load_player_stats(selected_season):
                     tm.image_path_in_storage AS 이미지_경로,
                     tm.first_name || ' ' || tm.last_name AS 이름,
                     COALESCE(tm.jersey_number::TEXT, '') AS 등번호,
-                    COUNT(DISTINCT ps.match_id) AS 경기_횟수,
+                    COUNT(DISTINCT a.match_id) AS 경기_횟수,  -- attendance 테이블을 기준으로 경기 횟수 계산
                     COALESCE(SUM(ps.goals), 0) AS 골,
                     COALESCE(SUM(ps.assists), 0) AS 어시스트,
                     COALESCE(SUM(ps.goals + ps.assists), 0) AS 공격포인트,
                     COALESCE(SUM(CASE WHEN ps.mom THEN 1 ELSE 0 END), 0) AS MOM_횟수,
-                    ROUND(COALESCE(SUM(ps.goals + ps.assists), 0)::numeric / NULLIF(COUNT(DISTINCT ps.match_id), 0), 2) AS 경기당_공포_전환율,
+                    ROUND(COALESCE(SUM(ps.goals + ps.assists), 0)::numeric / NULLIF(COUNT(DISTINCT a.match_id), 0), 2) AS 경기당_공포_전환율,
                     CASE 
                         WHEN COUNT(DISTINCT ps.injury) = 1 AND MAX(ps.injury) = 'x' THEN 'x'
                         ELSE STRING_AGG(DISTINCT CASE 
@@ -98,8 +98,9 @@ def load_player_stats(selected_season):
                         END, ', ')
                     END AS 부상현황
                 FROM team_members tm
-                LEFT JOIN player_stats ps ON tm.member_id = ps.member_id
-                LEFT JOIN matches m ON ps.match_id = m.match_id
+                LEFT JOIN attendance a ON tm.member_id = a.member_id AND a.attendance_status = true
+                LEFT JOIN player_stats ps ON tm.member_id = ps.member_id AND a.match_id = ps.match_id
+                LEFT JOIN matches m ON a.match_id = m.match_id
                 LEFT JOIN seasons s ON m.season_id = s.season_id
                 WHERE s.season_name = %s
                 GROUP BY tm.member_id, tm.image_path_in_storage, tm.jersey_number
