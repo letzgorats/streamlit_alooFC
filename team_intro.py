@@ -65,28 +65,32 @@ def show_team_intro():
     # 좌표를 기반으로 카카오맵 JavaScript 삽입
     # 동적 로드를 위한 Kakao Maps HTML 및 JavaScript 코드
     kakao_map_html = f"""
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
         <meta name="referrer" content="no-referrer">
         <div id="map" style="width:100%;height:500px;"></div>
         <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&autoload=false&libraries=services"></script>
         <script>
-            kakao.maps.load(function() {{
-                var mapContainer = document.getElementById('map'), 
-                    mapOption = {{
-                        center: new kakao.maps.LatLng({latitude}, {longitude}), 
-                        level: 3
-                    }};
-                var map = new kakao.maps.Map(mapContainer, mapOption);
-                var marker = new kakao.maps.Marker({{
-                    map: map,
-                    position: new kakao.maps.LatLng({latitude}, {longitude})
+            document.addEventListener("DOMContentLoaded", function() {{
+                kakao.maps.load(function() {{
+                    var mapContainer = document.getElementById('map'), 
+                        mapOption = {{
+                            center: new kakao.maps.LatLng({latitude}, {longitude}), 
+                            level: 3
+                        }};
+                    var map = new kakao.maps.Map(mapContainer, mapOption);
+                    var marker = new kakao.maps.Marker({{
+                        map: map,
+                        position: new kakao.maps.LatLng({latitude}, {longitude})
+                    }});
+                    var infowindow = new kakao.maps.InfoWindow({{
+                        content: '<div style="width:150px;text-align:center;padding:6px 0;">부천 클리어 풋살장<br>{bucheon_clear_count}회</div>'
+                    }});
+                    infowindow.open(map, marker);
                 }});
-                var infowindow = new kakao.maps.InfoWindow({{
-                    content: '<div style="width:150px;text-align:center;padding:6px 0;">부천 클리어 풋살장<br>{bucheon_clear_count}회</div>'
-                }});
-                infowindow.open(map, marker);
             }});
         </script>
     """
+
     st.components.v1.html(kakao_map_html, height=500)
 
     # 장소별 경기 횟수 표시
