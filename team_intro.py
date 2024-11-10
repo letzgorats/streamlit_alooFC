@@ -10,7 +10,6 @@ load_dotenv()
 KAKAO_JS_API_KEY = os.getenv("KAKAO_JS_API_KEY")  # JavaScript API 키 가져오기
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")  # REST API 키 가져오기
 
-
 # 주소를 좌표로 변환하는 함수
 def get_coordinates(address):
     url = "https://dapi.kakao.com/v2/local/search/address.json"
@@ -43,9 +42,13 @@ def show_team_intro():
 
     st.markdown("## 🌠 주 활동 지역")
 
+    # 37.5163550343008
+    # 126.779867163442
+
     # 주소를 기반으로 좌표를 가져오기
     address = "경기 부천시 원미구 옥산로 255 4층"
     latitude, longitude = get_coordinates(address)
+
 
     if latitude is None or longitude is None:
         st.error("주소를 변환할 수 없습니다.")
@@ -58,7 +61,7 @@ def show_team_intro():
     # 좌표를 기반으로 카카오맵 JavaScript 삽입
     kakao_map_html = f"""
             <div id="map" style="width:100%;height:500px;"></div>
-            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&libraries=services"></script>
+            <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&libraries=services"></script>
             <script>
                 var mapContainer = document.getElementById('map'), 
                     mapOption = {{
