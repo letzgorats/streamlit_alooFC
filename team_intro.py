@@ -60,6 +60,7 @@ def show_team_intro():
 
     # 좌표를 기반으로 카카오맵 JavaScript 삽입
     kakao_map_html = f"""
+        <meta name="referrer" content="no-referrer">
         <div id="map" style="width:100%;height:500px;"></div>
         <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&libraries=services"></script>
         <script>
