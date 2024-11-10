@@ -6,12 +6,11 @@ from dotenv import load_dotenv
 import requests
 import os
 
-load_dotenv()
-KAKAO_JS_API_KEY = os.getenv("KAKAO_JS_API_KEY")  # JavaScript API 키 가져오기
-KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")  # REST API 키 가져오기
+
 
 # 주소를 좌표로 변환하는 함수
 def get_coordinates(address):
+    KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")  # REST API 키 가져오기
     url = "https://dapi.kakao.com/v2/local/search/address.json"
     headers = {"Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"}
     params = {"query": address}
@@ -40,6 +39,11 @@ def show_team_intro():
     st.markdown("## 👕 유니폼 소개")
     st.image("images/uniform/team_uniform.jpg", caption="Aloo FC 유니폼", width=400, use_column_width='auto')
 
+    load_dotenv()
+    KAKAO_JS_API_KEY = os.getenv("KAKAO_JS_API_KEY")  # JavaScript API 키 가져오기
+
+
+
     st.markdown("## 🌠 주 활동 지역")
 
     # 37.5163550343008
@@ -61,10 +65,11 @@ def show_team_intro():
     # 좌표를 기반으로 카카오맵 JavaScript 삽입
     # 동적 로드를 위한 Kakao Maps HTML 및 JavaScript 코드
     kakao_map_html = f"""
-            <meta name="referrer" content="no-referrer">
-            <div id="map" style="width:100%;height:500px;"></div>
-            <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&autoload=false&libraries=services"></script>
-            <script>
+        <meta name="referrer" content="no-referrer">
+        <div id="map" style="width:100%;height:500px;"></div>
+        <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&autoload=false&libraries=services"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {{
                 kakao.maps.load(function() {{
                     var mapContainer = document.getElementById('map'), 
                         mapOption = {{
@@ -72,22 +77,18 @@ def show_team_intro():
                             level: 3
                         }};
                     var map = new kakao.maps.Map(mapContainer, mapOption);
-
-                    // 마커 설정
                     var marker = new kakao.maps.Marker({{
                         map: map,
                         position: new kakao.maps.LatLng({latitude}, {longitude})
                     }});
-
-                    // 인포윈도우로 장소에 대한 설명 표시
                     var infowindow = new kakao.maps.InfoWindow({{
                         content: '<div style="width:150px;text-align:center;padding:6px 0;">부천 클리어 풋살장<br>{bucheon_clear_count}회</div>'
                     }});
                     infowindow.open(map, marker);
                 }});
-            </script>
-        """
-
+            }});
+        </script>
+    """
     st.components.v1.html(kakao_map_html, height=500)
 
     # 장소별 경기 횟수 표시
@@ -97,7 +98,8 @@ def show_team_intro():
         count_text = f"<span style='color:green; font-size:20px;'>{row['match_count']}회</span>"
         st.markdown(f"{place_text} : {count_text}", unsafe_allow_html=True)
 
-
+    # st.write("KAKAO_JS_API_KEY:", os.getenv("KAKAO_JS_API_KEY"))
+    # st.write("KAKAO_REST_API_KEY:", os.getenv("KAKAO_REST_API_KEY"))
     # # 부천 클리어 풋살장의 좌표
     # bucheon_clear_futsal_location = [37.505653, 126.753796]
     # # Folium 지도 생성 (부천 클리어 풋살장의 좌표로 설정)
