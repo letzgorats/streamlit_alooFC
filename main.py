@@ -1,5 +1,8 @@
+
 # import psycopg2
+# 페이지 설정 (파비콘과 제목 변경)# 페이지 설정 (파비콘과 제목 변경)
 import streamlit as st
+st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
 # from streamlit_image_zoom import image_zoom
 from team_intro import show_team_intro
 from team_members import show_team_members
@@ -12,8 +15,6 @@ from prediction import prediction_app  # 예측 투표 기능 임포트
 from prediction import calculate_prediction_rates
 import urllib.parse
 
-# 페이지 설정 (파비콘과 제목 변경)
-st.set_page_config(page_title="AlooFC", page_icon="images/logo/alooFC_fabicon.ico")
 
 
 # 다크모드/라이트모드 선택 기능 추가
