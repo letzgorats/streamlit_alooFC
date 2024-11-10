@@ -59,35 +59,38 @@ def show_team_intro():
     bucheon_clear_count = match_counts_df[match_counts_df['place'] == '부천 클리어 풋살장']['match_count'].values[0]
 
     # 좌표를 기반으로 카카오맵 JavaScript 삽입
+    # 동적 로드를 위한 Kakao Maps HTML 및 JavaScript 코드
     kakao_map_html = f"""
-        <meta name="referrer" content="no-referrer">
-        <div id="map" style="width:100%;height:500px;"></div>
-        <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&libraries=services"></script>
-        <script>
-            var mapContainer = document.getElementById('map'), 
-                mapOption = {{
-                    center: new kakao.maps.LatLng({latitude}, {longitude}), 
-                    level: 3
-                }};
-            var map = new kakao.maps.Map(mapContainer, mapOption);
+            <meta name="referrer" content="no-referrer">
+            <div id="map" style="width:100%;height:500px;"></div>
+            <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&autoload=false&libraries=services"></script>
+            <script>
+                kakao.maps.load(function() {{
+                    var mapContainer = document.getElementById('map'), 
+                        mapOption = {{
+                            center: new kakao.maps.LatLng({latitude}, {longitude}), 
+                            level: 3
+                        }};
+                    var map = new kakao.maps.Map(mapContainer, mapOption);
 
-            // 마커 설정
-            var marker = new kakao.maps.Marker({{
-                map: map,
-                position: new kakao.maps.LatLng({latitude}, {longitude})
-            }});
+                    // 마커 설정
+                    var marker = new kakao.maps.Marker({{
+                        map: map,
+                        position: new kakao.maps.LatLng({latitude}, {longitude})
+                    }});
 
-            // 인포윈도우로 장소에 대한 설명 표시
-            var infowindow = new kakao.maps.InfoWindow({{
-                content: '<div style="width:150px;text-align:center;padding:6px 0;">부천 클리어 풋살장<br>{bucheon_clear_count}회</div>'
-            }});
-            infowindow.open(map, marker);
-        </script>
-    """
+                    // 인포윈도우로 장소에 대한 설명 표시
+                    var infowindow = new kakao.maps.InfoWindow({{
+                        content: '<div style="width:150px;text-align:center;padding:6px 0;">부천 클리어 풋살장<br>{bucheon_clear_count}회</div>'
+                    }});
+                    infowindow.open(map, marker);
+                }});
+            </script>
+        """
 
     st.components.v1.html(kakao_map_html, height=500)
 
-    # 장소별 경기 횟수 표시 (텍스트 형식)
+    # 장소별 경기 횟수 표시
     st.markdown("### 📍 장소별 경기 횟수")
     for _, row in match_counts_df.iterrows():
         place_text = f"**🏟️ {row['place']}**"
