@@ -1,33 +1,14 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-from utils import load_image, get_match_counts_by_place
+from utils import load_image, get_match_counts_by_place,get_match_counts_with_coordinates
 from dotenv import load_dotenv
 import requests
 import os
-
-
-
-# 주소를 좌표로 변환하는 함수
-def get_coordinates(address):
-    KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")  # REST API 키 가져오기
-    url = "https://dapi.kakao.com/v2/local/search/address.json"
-    headers = {"Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"}
-    params = {"query": address}
-
-    response = requests.get(url, headers=headers, params=params)
-    if response.status_code == 200:
-        result = response.json()
-        if result["documents"]:
-            y = result["documents"][0]["y"]  # 위도
-            x = result["documents"][0]["x"]  # 경도
-            return float(y), float(x)
-    return None, None
-
+import json
 
 def show_team_intro():
     st.header("Aloo FC 팀 소개 📢")
-    st.write("Aloo FC 로고:")
     # streamlit 기본 이미지 표시로 변경
     img = load_image("images/logo/alooFC_logo.png")
 
@@ -42,92 +23,60 @@ def show_team_intro():
     load_dotenv()
     KAKAO_JS_API_KEY = os.getenv("KAKAO_JS_API_KEY")  # JavaScript API 키 가져오기
 
-
-
     st.markdown("## 🌠 주 활동 지역")
 
-    # 37.5163550343008
-    # 126.779867163442
-
-    # 주소를 기반으로 좌표를 가져오기
-    address = "경기 부천시 원미구 옥산로 255 4층"
-    latitude, longitude = get_coordinates(address)
+    # 동적으로 데이터 가져오기
+    locations = get_match_counts_with_coordinates()
 
 
-    if latitude is None or longitude is None:
-        st.error("주소를 변환할 수 없습니다.")
+    # 좌표가 없으면 에러 표시
+    if not locations:
+        st.error("장소 데이터를 가져오지 못했습니다. 주소 또는 API 키를 확인하세요.")
         return
 
-    # 장소별 경기 횟수 데이터 불러오기
-    match_counts_df = get_match_counts_by_place()
-    bucheon_clear_count = match_counts_df[match_counts_df['place'] == '부천 클리어 풋살장']['match_count'].values[0]
+    # JSON 변환
+    locations_json = json.dumps(locations, ensure_ascii=False)
+
 
     # 좌표를 기반으로 카카오맵 JavaScript 삽입
     # 동적 로드를 위한 Kakao Maps HTML 및 JavaScript 코드
+    # 지도 HTML 생성
     kakao_map_html = f"""
-        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-        <meta name="referrer" content="no-referrer">
-        <div id="map" style="width:100%;height:500px;"></div>
-        <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&autoload=false&libraries=services"></script>
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {{
-                kakao.maps.load(function() {{
-                    var mapContainer = document.getElementById('map'), 
-                        mapOption = {{
-                            center: new kakao.maps.LatLng({latitude}, {longitude}), 
-                            level: 3
-                        }};
-                    var map = new kakao.maps.Map(mapContainer, mapOption);
-                    var marker = new kakao.maps.Marker({{
-                        map: map,
-                        position: new kakao.maps.LatLng({latitude}, {longitude})
+            <div id="map" style="width:100%;height:500px;"></div>
+            <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_API_KEY}&autoload=false&libraries=services"></script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {{
+                    kakao.maps.load(function() {{
+                        var mapContainer = document.getElementById('map'), 
+                            mapOption = {{
+                                center: new kakao.maps.LatLng({locations[0]['latitude']}, {locations[0]['longitude']}), 
+                                level: 7
+                            }};
+                        var map = new kakao.maps.Map(mapContainer, mapOption);
+
+                        // 마커 추가
+                        var locations = {locations_json};
+                        locations.forEach(function(location) {{
+                            var marker = new kakao.maps.Marker({{
+                                map: map,
+                                position: new kakao.maps.LatLng(location.latitude, location.longitude)
+                            }});
+                            var infowindow = new kakao.maps.InfoWindow({{
+                                content: `<div style="width:150px;text-align:center;">${{location.name}}<br>${{location.match_count}}회</div>`
+                            }});
+                            infowindow.open(map, marker);
+                        }});
                     }});
-                    var infowindow = new kakao.maps.InfoWindow({{
-                        content: '<div style="width:150px;text-align:center;padding:6px 0;">부천 클리어 풋살장<br>{bucheon_clear_count}회</div>'
-                    }});
-                    infowindow.open(map, marker);
                 }});
-            }});
-        </script>
-    """
+            </script>
+        """
 
     st.components.v1.html(kakao_map_html, height=500)
 
     # 장소별 경기 횟수 표시
     st.markdown("### 📍 장소별 경기 횟수")
-    for _, row in match_counts_df.iterrows():
-        place_text = f"**🏟️ {row['place']}**"
-        count_text = f"<span style='color:green; font-size:20px;'>{row['match_count']}회</span>"
-        st.markdown(f"{place_text} : {count_text}", unsafe_allow_html=True)
-
-    # st.write("KAKAO_JS_API_KEY:", os.getenv("KAKAO_JS_API_KEY"))
-    # st.write("KAKAO_REST_API_KEY:", os.getenv("KAKAO_REST_API_KEY"))
-    # # 부천 클리어 풋살장의 좌표
-    # bucheon_clear_futsal_location = [37.505653, 126.753796]
-    # # Folium 지도 생성 (부천 클리어 풋살장의 좌표로 설정)
-    # m = folium.Map(location=bucheon_clear_futsal_location, zoom_start=12)
-    #
-    # # 부천 클리어 풋살장 마커 추가
-    # folium.Marker(
-    #     location=bucheon_clear_futsal_location,
-    #     popup="부천 클리어 풋살장",
-    #     icon=folium.Icon(color='green', icon='info-sign')
-    # ).add_to(m)
-    #
-    # # 목동의 좌표
-    # mokdong_location = [37.5326, 126.8746]
-    #
-    # # 목동 마커 추가
-    # folium.Marker(
-    #     location=mokdong_location,
-    #     popup="목동",
-    #     icon=folium.Icon(color='blue', icon='info-sign')
-    # ).add_to(m)
-    #
-    # # Folium 지도를 Streamlit에 표시
-    # st_folium(m, width=700, height=500)
-
-
-
-
-
+    for loc in locations:
+        st.markdown(
+            f"**🏟️ {loc['name']}** : <span style='color:green; font-size:20px;'>{loc['match_count']}회</span>",
+            unsafe_allow_html=True
+        )

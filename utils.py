@@ -7,6 +7,7 @@ from PIL import Image
 import pandas as pd
 import jwt
 import datetime
+import requests
 from sqlalchemy import create_engine  # 추가
 
 # 로컬 환경에서만 .env 파일 로드
@@ -163,3 +164,45 @@ def get_match_counts_by_place():
     finally:
         conn.close()
     return match_counts
+
+# 주소를 좌표로 변환하는 함수
+def get_coordinates(address):
+    KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")  # REST API 키 가져오기
+    url = "https://dapi.kakao.com/v2/local/search/address.json"
+    headers = {"Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"}
+    params = {"query": address}
+
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code == 200:
+        result = response.json()
+        if result["documents"]:
+            y = result["documents"][0]["y"]  # 위도
+            x = result["documents"][0]["x"]  # 경도
+            return float(y), float(x)
+    return None, None
+
+def get_match_counts_with_coordinates():
+    """DB에서 장소별 경기 횟수와 주소를 가져와 좌표를 반환하는 함수"""
+    conn = create_connection()
+    query = """
+    SELECT p.place_name, p.address, COUNT(m.match_id) AS match_count
+    FROM places p
+    LEFT JOIN matches m ON p.place_id = m.place_id
+    GROUP BY p.place_name, p.address;
+    """
+    df = pd.read_sql(query, conn)
+    conn.close()
+
+    # 좌표 가져오기
+    locations = []
+    for _, row in df.iterrows():
+        lat, lng = get_coordinates(row["address"])
+        if lat and lng:
+            locations.append({
+                "name": row["place_name"],
+                "latitude": lat,
+                "longitude": lng,
+                "match_count": row["match_count"]
+            })
+    return locations
