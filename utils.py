@@ -14,8 +14,10 @@ from sqlalchemy import create_engine  # 추가
 # if os.getenv('DATABASE_URL') is None:
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')  # 보안을 위해 실제 비밀 키를 사용하세요
-if not SECRET_KEY:
-    st.error("SECRET_KEY가 설정되지 않았습니다. .env 파일을 확인하세요.")
+
+# 배포환경에서는 이 메시지 안 보이게 꺼도 된다.
+# if not SECRET_KEY:
+#     st.error("SECRET_KEY가 설정되지 않았습니다. .env 파일을 확인하세요.")
 
 
 # 데이터베이스 연결 함수
