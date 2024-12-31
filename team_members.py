@@ -34,7 +34,7 @@ def show_team_members():
         for i, member in enumerate(team_members):
             with cols[i % num_cols]:
                 # 각 선수 카드 스타일
-                (member, True)
+                display_profile_card(member, True)
 
     else:
         # 특정 선수 프로필 상세 보기
